@@ -5,6 +5,10 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { join } from 'path';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RestaurantsModule } from './restaurants/restaurants.module';
+import * as Joi from 'joi';
+import { Restaurant } from './restaurants/entities/restaurant.entity';
+
+// console.log(Joi);
 
 @Module({
   imports: [
@@ -16,16 +20,23 @@ import { RestaurantsModule } from './restaurants/restaurants.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: process.env.NODE_ENV === 'dev' ? '.env.dev' : '.env.test',
+      ignoreEnvFile: process.env.NODE_ENV === 'prod',
+      validationSchema: Joi.object({
+        // 유효성 검사의 예시
+        NODE_ENV: Joi.string().valid('dev', 'prod', 'test').required(),
+        DB_HOST: Joi.string().required(),
+        DB_PORT: Joi.string().required(),
+      }),
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'gagaHold#3',
-      database: 'nuber-eats',
-      entities: [],
-      synchronize: true,
+      host: process.env.DB_HOST,
+      port: +process.env.DB_PORT,
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      entities: [Restaurant],
+      synchronize: process.env.NODE_ENV !== 'prod', // 자동으로 entity를 읽어서 migration..
       logging: true,
     }),
   ],
