@@ -14,7 +14,7 @@ export class UsersService {
     email,
     password,
     role,
-  }: CreateAccountInput): Promise<string | undefined> {
+  }: CreateAccountInput): Promise<[boolean, string?]> {
     // check that email does not exist. (new user check )
     // 계정 생성, 비밀번호 해싱
     try {
@@ -24,13 +24,14 @@ export class UsersService {
         // 에러
         // throw Error()
 
-        return '이미 유저 존재함';
+        return [false, '이미 유저 존재함'];
       }
 
       await this.users.save(this.users.create({ email, password, role }));
+      return [true];
     } catch (e) {
       console.log(e);
-      return '게정을 생성할 수 없었습니다.';
+      return [false, '게정을 생성할 수 없었습니다.'];
     }
   }
 }
