@@ -1,5 +1,8 @@
-import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
+import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql';
 import { findBreakingChanges } from 'graphql';
+import { AuthUser } from 'src/auth/auth-user.decorator';
+import { AuthGuard } from 'src/auth/auth.guard';
 import {
   CreateAccountInput,
   CreateAccountOutput,
@@ -14,7 +17,33 @@ export class UsersResolver {
 
   @Query((returns) => Boolean)
   hi() {
+    console.log('hi');
     return true;
+  }
+
+  @Query((returns) => User)
+  // @UseGuards(AuthGuard)
+  findMe(@AuthUser() authUser: User) {
+    // console.log('context USER ::: ', context.user);
+
+    return authUser;
+
+    // if (context.user) {
+    //   const user: User = context.user;
+
+    //   return user;
+
+    //   //return true;
+    // } else return null;
+
+    // if (!context.user) {
+    //   return;
+    // } else {
+    //   console.log('user exists');
+    //   return context.user;
+    // }
+
+    // if(context.user && typeof context.user === 'User')
   }
 
   @Mutation((returns) => CreateAccountOutput)
@@ -50,5 +79,5 @@ export class UsersResolver {
         error,
       };
     }
-  }
+  } // ? END OF loginInput
 }

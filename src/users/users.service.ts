@@ -77,5 +77,9 @@ export class UsersService {
         error: e,
       };
     }
+  } // ? END login
+
+  async findById(id: number): Promise<User> {
+    return this.users.findOne({ where: { id } });
   }
 }
