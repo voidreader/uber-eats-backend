@@ -7,6 +7,7 @@ import { User } from './entities/user.entity';
 
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from 'src/jwt/jwt.service';
+import { EditProfileInput } from './dtos/edit-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -81,5 +82,25 @@ export class UsersService {
 
   async findById(id: number): Promise<User> {
     return this.users.findOne({ where: { id } });
+  }
+
+  async editProfile(
+    userId: number,
+    { email, password }: EditProfileInput,
+  ): Promise<User> {
+    // return this.users.update({ id: userId }, { email, password });
+    const user = await this.users.findOne({ where: { id: userId } });
+
+    // typeorm에서 beforeupdate를 상시 발동하기 위해서
+    // 강제로 업데이트 된것처럼 만들어준다.
+    if (email) {
+      user.email = email;
+    }
+
+    if (password) {
+      user.password = password;
+    }
+
+    return this.users.save(user);
   }
 }
