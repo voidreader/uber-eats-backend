@@ -18,6 +18,7 @@ import { User } from './users/entities/user.entity';
 import { JwtModule } from './jwt/jwt.module';
 import { JwtMiddleware } from './jwt/jwt.middleware';
 import { AuthModule } from './auth/auth.module';
+import { Verification } from './users/entities/verification.entity';
 
 // console.log(Joi);
 
@@ -48,7 +49,7 @@ import { AuthModule } from './auth/auth.module';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      entities: [Restaurant, User],
+      entities: [Restaurant, User, Verification],
       synchronize: process.env.NODE_ENV !== 'prod', // 자동으로 entity를 읽어서 migration..
       logging: true,
     }),

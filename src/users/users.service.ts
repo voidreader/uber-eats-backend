@@ -1,19 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreateAccountInput } from './dtos/create-account.dto';
+import {
+  CreateAccountInput,
+  CreateAccountOutput,
+} from './dtos/create-account.dto';
 import { LoginInput, LoginOutput } from './dtos/login.dto';
 import { User } from './entities/user.entity';
-
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from 'src/jwt/jwt.service';
-import { EditProfileInput } from './dtos/edit-profile.dto';
+import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
+import { Verification } from './entities/verification.entity';
+import { VerifyEmailOutput } from './dtos/verify-email.dto';
+import { UserProfileOutput } from './dtos/user-profile.dto';
 
 @Injectable()
-export class UsersService {
+export class UserService {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
-    private readonly config: ConfigService,
+    @InjectRepository(Verification)
+    private readonly verifications: Repository<Verification>,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -21,86 +26,110 @@ export class UsersService {
     email,
     password,
     role,
-  }: CreateAccountInput): Promise<[boolean, string?]> {
-    // check that email does not exist. (new user check )
-    // 계정 생성, 비밀번호 해싱
+  }: CreateAccountInput): Promise<CreateAccountOutput> {
     try {
-      const exists = await this.users.findOne({ where: { email } }); // typeORM 버전이 올라가면서 where을 명시적으로 작성해주어야한다.
-
+      const exists = await this.users.findOne({ where: { email } });
       if (exists) {
-        // 에러
-        // throw Error()
-
-        return [false, '이미 유저 존재함'];
+        return { ok: false, error: 'There is a user with that email already' };
       }
-
-      await this.users.save(this.users.create({ email, password, role }));
-      return [true];
+      const user = await this.users.save(
+        this.users.create({ email, password, role }),
+      );
+      await this.verifications.save(
+        this.verifications.create({
+          user,
+        }),
+      );
+      return { ok: true };
     } catch (e) {
-      console.log(e);
-      return [false, '게정을 생성할 수 없었습니다.'];
+      return { ok: false, error: "Couldn't create account" };
     }
-  } // ? END OF createAccount
+  }
 
-  async login({
-    email,
-    password,
-  }: LoginInput): Promise<{ ok: boolean; error?: string; token?: string }> {
-    // 1. email 찾기
-    // 2. password 검증
-    // 3. JWT 생성 후 유저에게 전달.
-
+  async login({ email, password }: LoginInput): Promise<LoginOutput> {
     try {
-      const user = await this.users.findOne({ where: { email } });
+      const user = await this.users.findOne({
+        where: { email },
+        select: ['password'],
+      });
       if (!user) {
-        return { ok: false, error: 'email 올바르지 않음' };
-      }
-
-      const passCheckResult = await user.checkPassword(password);
-
-      if (!passCheckResult) {
         return {
           ok: false,
-          error: '패스워드 틀림',
+          error: 'User not found',
         };
       }
-
-      // const token = jwt.sign({ id: user.id }, this.config.get('SECRET_KEY'));
+      const passwordCorrect = await user.checkPassword(password);
+      if (!passwordCorrect) {
+        return {
+          ok: false,
+          error: 'Wrong password',
+        };
+      }
       const token = this.jwtService.sign(user.id);
-
       return {
         ok: true,
         token,
       };
-    } catch (e) {
+    } catch (error) {
       return {
         ok: false,
-        error: e,
+        error,
       };
     }
-  } // ? END login
+  }
 
-  async findById(id: number): Promise<User> {
-    return this.users.findOne({ where: { id } });
+  async findById(id: number): Promise<UserProfileOutput> {
+    try {
+      const user = await this.users.findOne({ where: { id } });
+      if (user) {
+        return {
+          ok: true,
+          user: user,
+        };
+      }
+    } catch (error) {
+      return { ok: false, error: 'User Not Found' };
+    }
   }
 
   async editProfile(
     userId: number,
     { email, password }: EditProfileInput,
-  ): Promise<User> {
-    // return this.users.update({ id: userId }, { email, password });
-    const user = await this.users.findOne({ where: { id: userId } });
-
-    // typeorm에서 beforeupdate를 상시 발동하기 위해서
-    // 강제로 업데이트 된것처럼 만들어준다.
-    if (email) {
-      user.email = email;
+  ): Promise<EditProfileOutput> {
+    try {
+      const user = await this.users.findOne({ where: { id: userId } });
+      if (email) {
+        user.email = email;
+        user.verified = false;
+        await this.verifications.save(this.verifications.create({ user }));
+      }
+      if (password) {
+        user.password = password;
+      }
+      await this.users.save(user);
+      return {
+        ok: true,
+      };
+    } catch (error) {
+      return { ok: false, error: 'Could not update profile.' };
     }
+  }
 
-    if (password) {
-      user.password = password;
+  async verifyEmail(code: string): Promise<VerifyEmailOutput> {
+    try {
+      const verification = await this.verifications.findOne({
+        where: { code },
+        relations: ['user'],
+      });
+      if (verification) {
+        verification.user.verified = true;
+        this.users.save(verification.user);
+        this.verifications.delete(verification.id);
+        return { ok: true };
+      }
+      return { ok: false, error: 'Verification not found.' };
+    } catch (error) {
+      return { ok: false, error };
     }
-
-    return this.users.save(user);
   }
 }

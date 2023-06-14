@@ -18,6 +18,7 @@ type User {
   email: String!
   password: String!
   role: UserRole!
+  verified: Boolean!
 }
 
 """
@@ -53,10 +54,14 @@ type UserProfileOutput {
   user: User
 }
 
+type VerifyEmailOutput {
+  error: String
+  ok: Boolean!
+}
+
 type Query {
   restaurants: [Restaurant!]!
-  hi: Boolean!
-  findMe: User!
+  me: User!
   userProfile(userId: Float!): UserProfileOutput!
 }
 
@@ -66,6 +71,7 @@ type Mutation {
   createAccount(input: CreateAccountInput!): CreateAccountOutput!
   login(input: LoginInput!): LoginOutput!
   editProfile(input: EditProfileInput!): EditProfileOutput!
+  verifyEmail(input: VerifyEmailInput!): VerifyEmailOutput!
 }
 
 input createRestaurantDto {
@@ -103,4 +109,8 @@ input LoginInput {
 input EditProfileInput {
   email: String
   password: String
+}
+
+input VerifyEmailInput {
+  code: String!
 }
