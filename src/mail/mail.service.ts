@@ -1,6 +1,6 @@
 import { Inject, Injectable, Post } from '@nestjs/common';
 import { CONFIG_OPTIONS } from 'src/common/common.const';
-import { MailModuleOptions } from './mail.interface';
+import { EmailVars, MailModuleOptions } from './mail.interface';
 import got from 'got';
 import * as FormData from 'form-data';
 
@@ -13,26 +13,40 @@ export class MailService {
     // this.sendEmail(`testing`, 'test');
   }
 
-  private async sendEmail(subject: string, content: string) {
+  private async sendEmail(
+    subject: string,
+    template: string,
+    emailVars: EmailVars[],
+  ) {
     const form = new FormData();
     form.append(`from`, `Excited User <mailgun@${this.options.domain}>`);
-    form.append(`to`, `loudsmile@naver.com`);
+    form.append(`to`, `loudsmile@naver.com`); // 여기는 유료다! 인증된 이메일만 고정으로 사용하도록 해놓고 서비스 시 변경.
     form.append(`subject`, subject);
-    form.append(`text`, content);
-
-    const response = await got(
-      `https://api.mailgun.net/v3/${this.options.domain}/messages`,
-      {
-        headers: {
-          Authorization: `Basic ${Buffer.from(
-            `api:${this.options.apiKey}`,
-          ).toString('base64')}`,
+    // form.append(`text`, content);
+    form.append(`template`, template);
+    // form.append(`v:code`, 'test-code');
+    emailVars.forEach((item) => form.append(item.key, item.value));
+    try {
+      const response = await got(
+        `https://api.mailgun.net/v3/${this.options.domain}/messages`,
+        {
+          headers: {
+            Authorization: `Basic ${Buffer.from(
+              `api:${this.options.apiKey}`,
+            ).toString('base64')}`,
+          },
+          method: 'POST',
+          body: form,
         },
-        method: 'POST',
-        body: form,
-      },
-    );
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  } // ? END endEmail
 
-    console.log(response.body);
+  sendVerificationEmail(email: string, code: string) {
+    this.sendEmail('Verify Your Email', 'verify-email', [
+      { key: 'v:code', value: code },
+    ]);
   }
 }
