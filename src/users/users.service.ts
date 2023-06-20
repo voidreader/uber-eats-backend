@@ -138,8 +138,8 @@ export class UserService {
         return { ok: true };
       }
       return { ok: false, error: 'Verification not found.' };
-    } catch (error) {
-      return { ok: false, error };
+    } catch (e) {
+      return { ok: false, error: 'cant verify email' };
     }
   }
 }

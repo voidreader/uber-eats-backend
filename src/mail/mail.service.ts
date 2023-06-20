@@ -13,11 +13,7 @@ export class MailService {
     // this.sendEmail(`testing`, 'test');
   }
 
-  private async sendEmail(
-    subject: string,
-    template: string,
-    emailVars: EmailVars[],
-  ) {
+  async sendEmail(subject: string, template: string, emailVars: EmailVars[]) {
     const form = new FormData();
     form.append(`from`, `Excited User <mailgun@${this.options.domain}>`);
     form.append(`to`, `loudsmile@naver.com`); // 여기는 유료다! 인증된 이메일만 고정으로 사용하도록 해놓고 서비스 시 변경.
@@ -25,6 +21,8 @@ export class MailService {
     // form.append(`text`, content);
     form.append(`template`, template);
     // form.append(`v:code`, 'test-code');
+
+    /*
     emailVars.forEach((item) => form.append(item.key, item.value));
     try {
       const response = await got(
@@ -42,6 +40,7 @@ export class MailService {
     } catch (error) {
       console.log(error);
     }
+    */
   } // ? END endEmail
 
   sendVerificationEmail(email: string, code: string) {

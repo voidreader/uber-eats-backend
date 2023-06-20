@@ -53,7 +53,8 @@ import { MailModule } from './mail/mail.module';
       database: process.env.DB_NAME,
       entities: [Restaurant, User, Verification],
       synchronize: process.env.NODE_ENV !== 'prod', // 자동으로 entity를 읽어서 migration..
-      logging: true,
+      logging:
+        process.env.NODE_ENV !== 'prod' && process.env.NODE_ENV !== 'test',
     }),
     UsersModule,
     CommonModule,
