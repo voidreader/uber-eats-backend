@@ -2,11 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { User } from 'src/users/entities/user.entity';
+import { getRepositoryToken } from '@nestjs/typeorm';
 
 const GRAPHQL_ENDPOINT = `/graphql`;
 const TEST_USER = {
-  email: 'nico@las.com',
+  email: 'loudsmile@naver.com',
   password: '12345',
 };
 
@@ -15,6 +17,7 @@ const TEST_USER = {
 describe('UserModule (e2e)', () => {
   let app: INestApplication;
   let jwtToken: string;
+  let usersRepository: Repository<User>;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -22,6 +25,7 @@ describe('UserModule (e2e)', () => {
     }).compile();
 
     app = module.createNestApplication();
+    usersRepository = module.get(getRepositoryToken(User));
     await app.init();
   });
 
@@ -158,7 +162,57 @@ describe('UserModule (e2e)', () => {
     }); // ? end of it.
   }); // ? end of describe login
 
-  describe('userProfile', () => {}); // end of describe userProfile
+  describe('userProfile', () => {
+    let userId: number;
+
+    beforeAll(async () => {
+      const [user] = await usersRepository.find();
+      userId = user.id;
+    });
+
+    it('유저 프로필 보기!', () => {
+      return request(app.getHttpServer())
+        .post(GRAPHQL_ENDPOINT)
+        .set(`X-JWT`, jwtToken)
+        .send({
+          query: `
+          {
+            userProfile(userId:${userId}) {
+              error
+              ok
+              user {
+                id
+                email
+                password
+              }
+            }
+          }
+      `,
+        })
+        .expect(200)
+        .expect((res) => {
+          console.log(res.body);
+          const {
+            body: {
+              data: {
+                userProfile: {
+                  ok,
+                  error,
+                  user: { id },
+                },
+              },
+            },
+          } = res;
+
+          // console.log(login);
+          expect(ok).toBe(true);
+          expect(id).toBe(userId);
+          // expect(login.token).toEqual(expect.any(String));
+        });
+    }); // end it
+
+    it.todo('유저 프로필 찾기 실패');
+  }); // end of describe userProfile
 
   it.todo('me');
   it.todo('verifyEmail');

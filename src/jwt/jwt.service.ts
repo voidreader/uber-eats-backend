@@ -14,6 +14,7 @@ export class JwtService {
 
   sign(userID: number): string {
     // console.log('hello');
+    console.log(`jwt Sign : ${userID}`);
     return jwt.sign({ id: userID }, this.options.privateKey);
   }
 

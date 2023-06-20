@@ -57,7 +57,7 @@ export class UserService {
     try {
       const user = await this.users.findOne({
         where: { email },
-        select: ['password'],
+        select: ['id', 'password'],
       });
       if (!user) {
         return {
@@ -72,6 +72,8 @@ export class UserService {
           error: 'Wrong password',
         };
       }
+
+      console.log(user);
       const token = this.jwtService.sign(user.id);
       return {
         ok: true,
