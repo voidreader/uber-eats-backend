@@ -2,14 +2,20 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type Restaurant {
+type Category {
   id: Float!
+  createdAt: DateTime!
+  updatedAt: DateTime!
   name: String!
-  isGood: Boolean
-  address: String!
-  ownerName: String!
-  categoryName: String!
+  coverImg: String
+  slug: String!
+  restaurants: [Restaurant!]!
 }
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
 
 type User {
   id: Float!
@@ -19,17 +25,29 @@ type User {
   password: String!
   role: UserRole!
   verified: Boolean!
+  restaurants: [Restaurant!]!
 }
-
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
 
 enum UserRole {
   Client
   Owner
   Delivery
+}
+
+type Restaurant {
+  id: Float!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  name: String!
+  coverImg: String!
+  address: String!
+  category: Category
+  owner: User!
+}
+
+type CreateRestaurantOutput {
+  error: String
+  ok: Boolean!
 }
 
 type CreateAccountOutput {
@@ -60,39 +78,23 @@ type VerifyEmailOutput {
 }
 
 type Query {
-  restaurants: [Restaurant!]!
   me: User!
   userProfile(userId: Float!): UserProfileOutput!
 }
 
 type Mutation {
-  createRestaurant(input: createRestaurantDto!): Boolean!
-  updateRestaurant(input: UpdateRestaurantDto!): Boolean!
+  createRestaurant(input: CreateRestaurantInput!): CreateRestaurantOutput!
   createAccount(input: CreateAccountInput!): CreateAccountOutput!
   login(input: LoginInput!): LoginOutput!
   editProfile(input: EditProfileInput!): EditProfileOutput!
   verifyEmail(input: VerifyEmailInput!): VerifyEmailOutput!
 }
 
-input createRestaurantDto {
+input CreateRestaurantInput {
   name: String!
-  isGood: Boolean = true
+  coverImg: String!
   address: String!
-  ownerName: String!
   categoryName: String!
-}
-
-input UpdateRestaurantDto {
-  id: Float!
-  data: UpdateRestaurantInputType!
-}
-
-input UpdateRestaurantInputType {
-  name: String
-  isGood: Boolean = true
-  address: String
-  ownerName: String
-  categoryName: String
 }
 
 input CreateAccountInput {

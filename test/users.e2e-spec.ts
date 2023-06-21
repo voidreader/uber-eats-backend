@@ -6,6 +6,7 @@ import { DataSource, Repository } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { toWeb } from 'form-data';
+import { Verification } from 'src/users/entities/verification.entity';
 
 const GRAPHQL_ENDPOINT = `/graphql`;
 const TEST_USER = {
@@ -14,12 +15,18 @@ const TEST_USER = {
 };
 const NEW_EMAIL = 'radiogaga.jin@gmail.com';
 
-// jest.mock("got")
-
 describe('UserModule (e2e)', () => {
   let app: INestApplication;
   let jwtToken: string;
   let usersRepository: Repository<User>;
+  let verificationsRepository: Repository<Verification>;
+
+  // 클린코드
+  // 아래의 request 로직 수정요함
+  const baseRequest = () => request(app.getHttpServer()).post(GRAPHQL_ENDPOINT);
+  const publicRequest = (query: string) => baseRequest().send({ query });
+  const privateRequest = (query: string) =>
+    baseRequest().set('X-JWT', jwtToken).send({ query });
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -28,6 +35,8 @@ describe('UserModule (e2e)', () => {
 
     app = module.createNestApplication();
     usersRepository = module.get(getRepositoryToken(User));
+    verificationsRepository = module.get(getRepositoryToken(Verification));
+
     await app.init();
   });
 
@@ -49,10 +58,8 @@ describe('UserModule (e2e)', () => {
 
   describe('createAccount', () => {
     it('should create account', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .send({
-          query: `
+      // request 부분 수정 예시
+      return publicRequest(`
           mutation {
             createAccount(input: {
               email:"${TEST_USER.email}",
@@ -63,8 +70,7 @@ describe('UserModule (e2e)', () => {
               error
             }
           }
-          `,
-        })
+          `)
         .expect(200)
         .expect((res) => {
           expect(res.body.data.createAccount.ok).toBe(true);
@@ -173,11 +179,7 @@ describe('UserModule (e2e)', () => {
     });
 
     it('유저 프로필 보기!', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .set(`X-JWT`, jwtToken) // 헤더 설정
-        .send({
-          query: `
+      return privateRequest(`
           {
             userProfile(userId:${userId}) {
               ok
@@ -187,8 +189,7 @@ describe('UserModule (e2e)', () => {
               }
             }
           }
-      `,
-        })
+      `)
         .expect(200)
         .expect((res) => {
           // console.log(res.body);
@@ -369,7 +370,75 @@ describe('UserModule (e2e)', () => {
     }); //? end of it.
   }); // ? end of descrbie editProfile
 
-  it.todo('verifyEmail');
+  describe('verifyEmail', () => {
+    let code: string;
+    beforeAll(async () => {
+      const [verification] = await verificationsRepository.find();
+      console.log(verification);
+      code = verification.code;
+    }); // ? end of before all
+
+    it('이메일 인증 성공', () => {
+      return request(app.getHttpServer())
+        .post(GRAPHQL_ENDPOINT)
+        .send({
+          query: `
+        mutation {
+          verifyEmail (input :{
+            code : "${code}"
+          }) {
+            ok
+            error
+          }
+        }
+        `,
+        })
+        .expect(200)
+        .expect((res) => {
+          const {
+            body: {
+              data: {
+                verifyEmail: { ok, error },
+              },
+            },
+          } = res;
+
+          console.log(res.body.data.verifyEmail);
+
+          expect(ok).toBe(true);
+        });
+    }); // end it
+    it('이메일 인증 실패', () => {
+      return request(app.getHttpServer())
+        .post(GRAPHQL_ENDPOINT)
+        .send({
+          query: `
+        mutation {
+          verifyEmail (input :{
+            code : "xxxxxxx"
+          }) {
+            ok
+            error
+          }
+        }
+        `,
+        })
+        .expect(200)
+        .expect((res) => {
+          const {
+            body: {
+              data: {
+                verifyEmail: { ok, error },
+              },
+            },
+          } = res;
+
+          console.log(res.body.data.verifyEmail);
+
+          expect(ok).toBe(false);
+        });
+    });
+  }); // ? end of describe
 
   // rest api 예시
   // it('/ (GET)', () => {
