@@ -57,6 +57,7 @@ import { Category } from './restaurants/entities/category.entity';
       logging:
         process.env.NODE_ENV !== 'prod' && process.env.NODE_ENV !== 'test',
     }),
+    AuthModule,
     UsersModule,
     CommonModule,
     JwtModule.forRoot({
