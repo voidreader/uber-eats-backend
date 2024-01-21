@@ -13,6 +13,7 @@ import { AllowedRoles } from './role.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
+  // AuthGuard는 return true or false
   constructor(private readonly reflector: Reflector) {}
   canActivate(
     context: ExecutionContext,
