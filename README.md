@@ -1,21 +1,13 @@
-# Nuber Eats
+# 우버이츠 클론코딩! <백엔드>
 
-The Backend of Nuber Eats Clone
+### Skills
+- NodeJS
+- NestJS
+- Typescript
+- TypeORM
+- GraphQL
+- Apollo
+- Jest
+- MySQL
+- Mailgun
 
-## User Model:
-
-- id
-- createdAt
-- updatedAt
-
-- email
-- password
-- role(client|owner|delivery)
-
-## User CRUD:
-
-- Create Account
-- Log In
-- See Profile
-- Edit Profile
-- Verify Email
